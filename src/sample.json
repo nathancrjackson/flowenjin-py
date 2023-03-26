@@ -1,0 +1,153 @@
+{
+	"tasks":
+	{
+		"uptime":
+		{
+			"description": "Uptime monitor",
+			"interval": 5,
+			"variables": {
+				"state": "up",
+				"count": 0,
+				"changestate": 3
+			},
+			"optree": {
+				"function": "ping",
+				"targetaddress": "8.8.8.8",
+				"output":
+				{
+					"function": "if",
+					"operation": "=",
+					"valueb": 0,
+					"outputtrue":
+					{
+						"function": "log",
+						"message": "Ping succeeded",
+						"output":
+						{
+							"function": "if",
+							"operation": "=",
+							"variablea": "state",
+							"valueb": "up",
+							"outputtrue":
+							{
+								"function": "variablereset",
+								"name": "count"
+							},
+							"outputfalse":
+							{
+								"function": "variableincrease",
+								"name": "count",
+								"output":
+								{
+									"function": "if",
+									"operation": "=",
+									"variablea": "count",
+									"variableb": "changestate",
+									"outputtrue":
+									[
+										{
+											"function": "setvariable",
+											"name": "state",
+											"value": "up"
+										},
+										{
+											"function": "variablereset",
+											"name": "count"
+										},
+										{
+											"function": "log",
+											"message": "Device 8.8.8.8 is up"
+										},
+										{
+											"function": "webhook",
+											"url": "https://discord.com/api/webhooks/",
+											"post": 
+											{
+												"content": "Device 8.8.8.8 is up"
+											},
+											"output":
+											{
+												"function": "if",
+												"operation": ">",
+												"valueb": 299,
+												"outputtrue":
+												{
+													"function": "log",
+													"message": "Webhook had error sending"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"outputfalse":
+					{
+						"function": "log",
+						"message": "Ping failed",
+						"output":
+						{
+							"function": "if",
+							"operation": "=",
+							"variablea": "state",
+							"valueb": "down",
+							"outputtrue":
+							{
+								"function": "variablereset",
+								"name": "count"
+							},
+							"outputfalse":
+							{
+								"function": "variableincrease",
+								"name": "count",
+								"output":
+								{
+									"function": "if",
+									"operation": "=",
+									"variablea": "count",
+									"variableb": "changestate",
+									"outputtrue":
+									[
+										{
+											"function": "setvariable",
+											"name": "state",
+											"value": "down"
+										},
+										{
+											"function": "variablereset",
+											"name": "count"
+										},
+										{
+											"function": "log",
+											"message": "Device 8.8.8.8 is down"
+										},
+										{
+											"function": "webhook",
+											"url": "https://discord.com/api/webhooks/",
+											"post": 
+											{
+												"content": "Device 8.8.8.8 is down"
+											},
+											"output":
+											{
+												"function": "if",
+												"operation": ">",
+												"valueb": 299,
+												"outputtrue":
+												{
+													"function": "log",
+													"message": "Webhook had error sending"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
