@@ -2,11 +2,10 @@ import pycron # For cron style functionality
 
 class Task:
 
-	def __init__(self, task_id, config_obj):
+	def __init__(self, task_id, task_obj, datasets, variables, routines):
 	
 		# Load in our source data
 		self.id = task_id
-		source_obj = config_obj['tasks'][task_id]
 
 		# Initialise our variables
 		self.description = "TaskEnjin task"
@@ -15,39 +14,42 @@ class Task:
 		self.debug = False
 		self.datasets = {}
 		self.variables = {}
+		self.global_variables = variables
 		self.routines = {}
 		self.optree = []
 		self.next_interval = 0
 
 		# Load in data into our variables if applicable
-		if 'description' in source_obj:
-			self.description = source_obj['description']
-		if 'interval' in source_obj:
-			self.interval = source_obj['interval']
-		if 'cron' in source_obj:
-			self.cron = source_obj['cron']
-		if 'datasets' in source_obj:
-			self.datasets = source_obj['datasets']
-		if 'variables' in source_obj:
-			self.variables = source_obj['variables']
-		if 'routines' in source_obj:
-			self.routines = source_obj['routines']
-		if 'optree' in source_obj:
-			self.optree = source_obj['optree']
-		if 'debug' in source_obj:
-			self.debug = source_obj['debug']
+		if 'description' in task_obj:
+			self.description = task_obj['description']
+		if 'interval' in task_obj:
+			self.interval = task_obj['interval']
+		if 'cron' in task_obj:
+			self.cron = task_obj['cron']
+		if 'datasets' in task_obj:
+			self.datasets = task_obj['datasets']
+		if 'variables' in task_obj:
+			self.variables = task_obj['variables']
+		if 'routines' in task_obj:
+			self.routines = task_obj['routines']
+		if 'optree' in task_obj:
+			self.optree = task_obj['optree']
+		if 'debug' in task_obj:
+			self.debug = task_obj['debug']
 		
 		# Merge in our dictionaries making sure the local copies over the global
-		if 'datasets' in config_obj:
-			temp = config_obj['datasets'].copy()
+		if datasets:
+			temp = datasets.copy()
 			temp.update(self.datasets)
 			self.datasets = temp
+		''' VARS ARE NOW GLOBALLY LINKED
 		if 'variables' in config_obj:
 			temp = config_obj['variables'].copy()
 			temp.update(self.variables)
 			self.variables = temp
-		if 'routines' in config_obj:
-			temp = config_obj['routines'].copy()
+		'''
+		if routines:
+			temp = routines.copy()
 			temp.update(self.routines)
 			self.routines = temp
 
