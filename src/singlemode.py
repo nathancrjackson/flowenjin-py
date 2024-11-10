@@ -1,15 +1,16 @@
 import time # For sleep
 import datetime # For unix time
 
-from task import Task
-from taskagent import TaskAgent
+from optree import OpTree
 
 class SingleThreadMode:
 
-	def __init__(self,):
-		self.tasks = []
+	optrees = []
 
-	def start(self):
+	def __init__(self, os_type):
+		self.os_type = os_type
+
+	def run(self):
 		try:
 			# Initiate our time variables at second -1
 			current_datetime = datetime.datetime.now()
@@ -26,9 +27,6 @@ class SingleThreadMode:
 
 			# Do our single loop
 			loop = True
-			
-			# Create the agent that handles our tasks
-			task_agent = TaskAgent()
 
 			while loop:
 				# Loop through each second that has passed
@@ -36,18 +34,20 @@ class SingleThreadMode:
 					latest_second = latest_second + 1
 
 					#Assuming the timers are more time sensitive
-					for task in self.tasks:
-						if task.checkinterval(latest_second):
-							task_agent.run(task)
+					for optree in self.optrees:
+						if optree.checkinterval(latest_second):
+							print("Fire INTERVAL")
+							#TODO: EXECUTE THE OPTREE WHEN MEANT TO FIRE
 
 					#Check if minute has ticked over and check in with cron jobs
 					if ((latest_second-last_minute) >=60):
 						last_minute = last_minute + 60
-						# print("A minute has ticked over")
+						print("A minute has ticked over")
 
-						for task in self.tasks:
-							if task.checkcron():
-								task_agent.run(task)
+						for optree in self.optrees:
+							if optree.checkcron():
+								print("Fire CRON")
+								#TODO: HANDLE CRON STYLE JOBS
 
 
 				# We are now at second x so process our current times
@@ -75,8 +75,8 @@ class SingleThreadMode:
 			loop = False
 
 
-	def append(self, task):
-		self.tasks.append(task)
+	def append(self, optree):
+		self.optrees.append(optree)
 
 	def count(self):
-		return len(self.tasks)
+		return len(self.optrees)

@@ -1,5 +1,5 @@
 {
-	"tasks":
+	"optrees":
 	{
 		"uptime":
 		{
@@ -10,7 +10,7 @@
 				"count": 0,
 				"changestate": 3
 			},
-			"optree": {
+			"tree": {
 				"function": "ping",
 				"targetaddress": "8.8.8.8",
 				"output":

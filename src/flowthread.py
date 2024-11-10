@@ -1,31 +1,55 @@
+import threading # For multithreading inheritance
 import time # For sleep
 import requests # For webhook
 import subprocess # For pings and any other system calls
 
 from datetime import datetime # For unix time
 
-class TaskAgent:
+class FlowThread (threading.Thread):
 
+	debug = False
 	ping_count_flag = 'c'
 	ping_count = 1
 	ping_timeout = 150
-	debug = False
+	optree = {}
+	#loop = True
 
-	def __init__(self):
-		pass
+	def __init__(self, optree, os_type):
+		threading.Thread.__init__(self)
+		self.optree = optree
+		if os_type == 'windows':
+			self.ping_count_flag = 'n'
 
-	def run(self, task):
-		self.task = task # Revisit this, this seems like a way to get security leaks
-		self.run_task(self.task.optree)
-
+	def run(self):
+		# Should just need to run this now that the timing is handled by the main thread
+		self.run_ops(self.optree.tree)
+		
+		time.sleep(0)
+	
+		#current_time = 0
+		#next_run = int(datetime.now().timestamp())
+		#
+		#while self.loop:
+		#	current_time = int(datetime.now().timestamp())
+		#	if current_time >= next_run:
+		#		self.run_ops(self.optree.tree)
+		#		next_run = current_time + self.optree.interval
+		#	
+		#	time.sleep(1)
+	
+	# TODO: Is this required?
+	def stop(self):
+		print("Stopping %s" % self.optree.description)
+		#self.loop = False
+			
 	def debuglog(self, string):
-		if TaskAgent.debug or (self.task.debug == True):
+		if self.debug:
 			print(string)
 
-	def run_task(self, op):
+	def run_ops(self, op):
 		if isinstance(op, list):
 			for listitem in op:
-				self.run_task(listitem)
+				self.run_ops(listitem)
 		else:
 			if op['function'] == 'if':
 				self.run_if(op)
@@ -51,7 +75,7 @@ class TaskAgent:
 		if 'targetaddress' in op:
 			ping_target = op['targetaddress']
 		elif 'targetvariable' in op:
-			ping_target = self.task.variables[op['targetvariable']]
+			ping_target = self.optree.variables[op['targetvariable']]
 		elif 'result' in op:
 			ping_target = op['result']
 	
@@ -64,7 +88,7 @@ class TaskAgent:
 		if 'output' in op:
 			op['output']['result'] = ping_result.returncode
 
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
 
 	def run_setvariable(self, op):
 		#print("setvariable")
@@ -76,48 +100,48 @@ class TaskAgent:
 			value = op['result']
 
 		if 'name' in op:
-			self.task.variables[op['name']] = value
-			self.debuglog("%s set to %s" % (op['name'], self.task.variables[op['name']]))
+			self.optree.variables[op['name']] = value
+			self.debuglog("%s set to %s" % (op['name'], self.optree.variables[op['name']]))
 			
 		if 'output' in op:
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
 		
 
 	def run_variableincrease(self, op):
 		#print("variableincrease")
 		
 		if 'name' in op:
-			self.task.variables[op['name']] = self.task.variables[op['name']] + 1
-			self.debuglog("%s set to %s" % (op['name'], self.task.variables[op['name']]))
+			self.optree.variables[op['name']] = self.optree.variables[op['name']] + 1
+			self.debuglog("%s set to %s" % (op['name'], self.optree.variables[op['name']]))
 			
 		if 'output' in op:
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
 
 	def run_variabledecrease(self, op):
 		#print("variabledecrease")
 		
 		if 'name' in op:
-			self.task.variables[op['name']] = self.task.variables[op['name']] - 1
-			self.debuglog("%s set to %s" % (op['name'], self.task.variables[op['name']]))
+			self.optree.variables[op['name']] = self.optree.variables[op['name']] - 1
+			self.debuglog("%s set to %s" % (op['name'], self.optree.variables[op['name']]))
 			
 		if 'output' in op:
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
 
 	def run_variablereset(self, op):
 		#print("variablereset")
 		
 		if 'name' in op:
-			self.task.variables[op['name']] = 0
+			self.optree.variables[op['name']] = 0
 			self.debuglog("%s set to %s" % (op['name'], 0))
 			
 		if 'output' in op:
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
 
 	def run_log(self, op):
 		#print("LOG")
 		print(op['message'])
 		if 'output' in op:
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
 
 	def run_if(self, op):
 		variable_A = ""
@@ -127,14 +151,14 @@ class TaskAgent:
 		if 'valuea' in op:
 			variable_A = op['valuea']
 		elif 'variablea' in op:
-			variable_A = self.task.variables[op['variablea']]
+			variable_A = self.optree.variables[op['variablea']]
 		elif 'result' in op:
 			variable_A = op['result']
 
 		if 'valueb' in op:
 			variable_B = op['valueb']
 		elif 'variableb' in op:
-			variable_B = self.task.variables[op['variableb']]
+			variable_B = self.optree.variables[op['variableb']]
 
 		if 'operation' in op:
 			operation = op['operation']
@@ -159,11 +183,11 @@ class TaskAgent:
 		if result == True:
 			if 'outputtrue' in op:
 				self.debuglog("%s %s %s is True" % (variable_A, operation, variable_B))
-				self.run_task(op['outputtrue'])
+				self.run_ops(op['outputtrue'])
 		else:
 			if 'outputfalse' in op:
 				self.debuglog("%s %s %s is False" % (variable_A, operation, variable_B))
-				self.run_task(op['outputfalse'])
+				self.run_ops(op['outputfalse'])
 
 
 	def run_webhook(self, op):
@@ -176,4 +200,4 @@ class TaskAgent:
 
 		if 'output' in op:
 			op['output']['result'] = response.status_code
-			self.run_task(op['output'])
+			self.run_ops(op['output'])
